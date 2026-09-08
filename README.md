@@ -4,12 +4,18 @@ Client-side Fabric mod for Hypixel SkyBlock. Scans players around you for fairy 
 
 **MC 26.1.2** · Fabric · Java 25 · Discord: [discord.gg/potatotool](https://discord.gg/potatotool)
 
+## Download
+
+Grab the latest jar from the [Releases](https://github.com/potatotoolv2/potatotoolv2/releases) page, or build it yourself (see [Build](#build)).
+
 ## Install
 
-1. Minecraft **26.1.2** with [Fabric Loader](https://fabricmc.net/) + [Fabric API](https://modrinth.com/mod/fabric-api)
+1. Minecraft **26.1.2** with [Fabric Loader](https://fabricmc.net/) 0.19.3+ and [Fabric API](https://modrinth.com/mod/fabric-api)
 2. Drop `potato-tool-v2-1.0.3-mc26.1.2.jar` into your `mods` folder
 3. Get a key from [developer.hypixel.net](https://developer.hypixel.net/)
 4. In-game: `/potatotoolv2` → **API Keys** → paste it (or `/scannerkey add <key>`)
+
+The mod is client-side only. You do not need it on a server, and it does nothing without a Hypixel API key.
 
 ## Features
 
@@ -39,12 +45,22 @@ API Keys · Lookup · Categories · Special · Skins · Advanced · HUD · Appea
 
 ## Build
 
-Needs **Java 25** and the Gradle wrapper (included).
+Needs **Java 25**. The Gradle wrapper is included, so nothing else to install.
 
 ```bash
-./gradlew.bat build
+git clone https://github.com/potatotoolv2/potatotoolv2.git
+cd potatotoolv2
+./gradlew build
 ```
 
-Jar lands in `build/libs/potato-tool-v2-1.0.3-mc26.1.2.jar`.
+On Windows use `.\gradlew.bat build` instead.
 
-Releases ship the playable jar plus this source tree so others can build it themselves.
+The jar lands in `build/libs/potato-tool-v2-1.0.3-mc26.1.2.jar`.
+
+## Your data
+
+Everything the mod saves stays on your machine, in your Minecraft `config` folder. API keys and webhook URLs you enter are stored locally and are never committed to this repo.
+
+## License
+
+[MIT](LICENSE)
