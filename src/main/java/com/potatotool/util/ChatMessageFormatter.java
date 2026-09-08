@@ -5,7 +5,9 @@ import com.potatotool.model.ScannedItem;
 import com.potatotool.model.ScannedPlayer;
 import java.util.Collection;
 import java.util.List;
+import java.net.URI;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.ClickEvent.OpenUrl;
 import net.minecraft.network.chat.ClickEvent.RunCommand;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent.ShowText;
@@ -25,6 +27,7 @@ public class ChatMessageFormatter {
    public static void sendPlayerBlock(ScannedPlayer player) {
       sendMessage(nameLine(player));
       sendMessage(profileLine(player));
+      sendMessage(actionsLine(player));
 
       List<ScannedItem> items = player.getDisplayableItems();
       if (!items.isEmpty()) {
@@ -33,49 +36,70 @@ public class ChatMessageFormatter {
    }
 
    private static MutableComponent nameLine(ScannedPlayer player) {
-      MutableComponent line = Component.literal("");
+      MutableComponent line = Component.literal("§7Name: ");
       String rank = player.getRankFormatted();
       if (rank != null && !rank.isEmpty()) {
          line.append(Component.literal(rank + " "));
       }
 
       line.append(clickablePartyUsername(player.getUsername(), player.getRankNameColor()));
-      line.append(clickablePartyLink(player.getUsername()));
       return line;
    }
 
    private static MutableComponent profileLine(ScannedPlayer player) {
-      MutableComponent line = Component.literal("");
-      String selected = player.getSelectedProfile();
-      boolean first = true;
-      if (selected != null && !selected.isEmpty()) {
-         int level = (int)player.getSkyblockLevel();
-         line.append(Component.literal("§7Lv " + levelColor(level) + "§l" + level + " "));
-         line.append(ProfileStyle.component(selected));
-         line.append(Component.literal(" §a★"));
-         first = false;
-      }
-
+      MutableComponent line = Component.literal("§7Profiles: ");
+      MutableComponent hover = Component.empty();
       List<ScannedPlayer.ProfileInfo> profiles = player.getProfiles();
+      boolean first = true;
+
       if (profiles != null) {
          for (ScannedPlayer.ProfileInfo info : profiles) {
-            if (info.isSelected()) {
-               continue;
-            }
-
             if (!first) {
-               line.append(Component.literal(" §8| "));
+               line.append(Component.literal("§7, "));
+               hover.append(Component.literal("\n"));
             }
 
             String name = info.getName() == null || info.getName().isBlank() ? "Unknown" : info.getName();
-            line.append(Component.literal("§7Lv " + levelColor(info.getLevel()) + info.getLevel() + " "));
-            line.append(ProfileStyle.component(name));
-            line.append(Component.literal(ProfileStyle.modeTag(info.getGameMode())));
+            MutableComponent entry = Component.literal("§8[" + levelColor(info.getLevel()) + info.getLevel() + "§8] ");
+            entry.append(ProfileStyle.component(name));
+            entry.append(Component.literal(ProfileStyle.modeTag(info.getGameMode())));
+            entry.append(Component.literal(info.isSelected() ? " §6★" : " §c★"));
+            line.append(entry);
+            hover.append(entry);
             first = false;
          }
       }
 
+      if (first) {
+         line.append(Component.literal("§cNo profiles found."));
+         return line;
+      }
+
+      hover.append(Component.literal("\n\n§6★ §7= selected profile"));
+      return line.withStyle(s -> s.withHoverEvent(new ShowText(hover)));
+   }
+
+   private static MutableComponent actionsLine(ScannedPlayer player) {
+      String name = player.getUsername();
+      MutableComponent line = Component.literal("§aActions: ");
+      line.append(commandButton("§a[Party]", "/ptparty " + name, "§7Party " + name + "."));
+      line.append(Component.literal(" "));
+      line.append(commandButton("§a[Visit]", "/visit " + name, "§7Open visit menu."));
+      line.append(Component.literal(" "));
+      line.append(urlButton("§a[SkyCrypt]", "https://sky.shiiyu.moe/stats/" + name, "§7Open SkyCrypt."));
+      line.append(Component.literal(" "));
+      line.append(urlButton("§a[NameMC]", "https://namemc.com/profile/" + name, "§7Open NameMC."));
       return line;
+   }
+
+   private static MutableComponent commandButton(String label, String command, String tooltip) {
+      return Component.literal(label)
+         .withStyle(s -> s.withClickEvent(new RunCommand(command)).withHoverEvent(new ShowText(Component.literal(tooltip))));
+   }
+
+   private static MutableComponent urlButton(String label, String url, String tooltip) {
+      return Component.literal(label)
+         .withStyle(s -> s.withClickEvent(new OpenUrl(URI.create(url))).withHoverEvent(new ShowText(Component.literal(tooltip))));
    }
 
    private static MutableComponent itemsLine(ScannedPlayer player, List<ScannedItem> items) {
@@ -95,21 +119,19 @@ public class ChatMessageFormatter {
          hover.append(Component.literal("\n§8+" + (itemCount - shown) + " more"));
       }
 
-      TextColor accent = TextColor.fromRgb(PotatoTheme.accentNow());
-      MutableComponent line = Component.literal("");
-      line.append(
-         Component.literal(itemCount + (itemCount == 1 ? " item" : " items"))
-            .withStyle(s -> s.withColor(accent).withUnderlined(true))
+      MutableComponent line = Component.literal(
+         "§bCurrent Items §7(§6" + itemCount + " Item" + (itemCount == 1 ? "" : "s") + "§7) §8(Hover)"
       );
-      line.append(Component.literal(" §8· §7hover"));
 
       int seymourTotal = player.getSeymourPieceCount();
       if (seymourTotal > 0) {
-         line.append(Component.literal(" §8· §dSeymour " + seymourTotal));
+         line.append(Component.literal(" §7(§dSeymour " + seymourTotal));
          int seymourRare = player.getSeymourRareCount();
          if (seymourRare > 0) {
-            line.append(Component.literal(" §7(" + seymourRare + " rare)"));
+            line.append(Component.literal("§7, §6" + seymourRare + " rare"));
          }
+
+         line.append(Component.literal("§7)"));
       }
 
       return line.withStyle(s -> s.withHoverEvent(new ShowText(hover)));
@@ -142,17 +164,21 @@ public class ChatMessageFormatter {
       String hex = item.getHexColor();
       String loc = formatLocation(item.getLocation());
       String profile = item.getProfileName();
-      MutableComponent line = Component.literal("• ");
+      MutableComponent line = Component.literal("§7- ");
       if (hex != null && !hex.isEmpty()) {
-         int rgb = ColorAnalyzer.hexToInt(hex);
+         TextColor color = TextColor.fromRgb(ColorAnalyzer.hexToInt(hex));
          String hexDisplay = hex.startsWith("#") ? hex : "#" + hex;
-         line.append(Component.literal(itemName).withStyle(s -> s.withColor(TextColor.fromRgb(rgb))));
-         line.append(Component.literal(" " + hexDisplay).withStyle(s -> s.withColor(TextColor.fromRgb(rgb))));
+         line.append(Component.literal(itemName).withStyle(s -> s.withColor(color)));
+         line.append(Component.literal(" " + hexDisplay).withStyle(s -> s.withColor(color)));
       } else {
-         line.append(Component.literal(itemName));
+         line.append(Component.literal(getCategoryColor(item.getCategory()) + itemName));
       }
 
-      line.append(Component.literal("  " + getCategoryColor(item.getCategory()) + catTag + (loc.isEmpty() ? "" : " §8| §7" + loc)));
+      line.append(Component.literal(" §7(§6" + catTag + "§7)"));
+      if (!loc.isEmpty()) {
+         line.append(Component.literal(" §7(§b" + loc + "§7)"));
+      }
+
       if (profile != null && !profile.isBlank()) {
          line.append(Component.literal(" "));
          line.append(ProfileStyle.component(profile));

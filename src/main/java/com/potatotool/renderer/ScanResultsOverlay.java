@@ -701,7 +701,7 @@ public class ScanResultsOverlay {
          String shown = loc.regionMatches(true, 0, "Ender Chest", 0, "Ender Chest".length())
             ? "Enderchest" + loc.substring("Ender Chest".length())
             : loc;
-         sb.append(" §8").append(shown);
+         sb.append(" §7(§b").append(shown).append("§7)");
       }
 
       if (profile != null && !profile.isBlank()) {
