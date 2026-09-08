@@ -12,6 +12,9 @@ public final class PotatoTheme {
    public static final int HEADER = 0xFF16103A;
    public static final int BORDER = 0xFF4A3480;
    public static final int CARD = 0xCC120C24;
+   public static final int HUD_CARD = 0x55070B12;
+   public static final int HUD_EDGE = 0x26FFFFFF;
+   public static final int HUD_DIVIDER = 0x30FFFFFF;
    public static final int ACCENT_BLUE = 0xFF6EA8FF;
    public static final int ACCENT_VIOLET = 0xFFA78BFA;
    public static final int TAB = 0xFF8B6CFF;

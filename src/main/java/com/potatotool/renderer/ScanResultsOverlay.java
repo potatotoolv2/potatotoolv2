@@ -432,7 +432,9 @@ public class ScanResultsOverlay {
             int displayableCount = player.getDisplayableItemCount();
             int itemsHeight = Math.min(displayableCount, 4) * lh + (displayableCount > 4 ? lh : 0);
             int totalHeight = headerHeight + profileHeight + itemsHeight + pad * 2 + 8;
-            context.fill(cardX, cardY, cardX + pw, cardY + totalHeight, PotatoTheme.CARD);
+            context.fill(cardX, cardY, cardX + pw, cardY + totalHeight, PotatoTheme.HUD_CARD);
+            context.fill(cardX, cardY, cardX + 1, cardY + totalHeight, PotatoTheme.HUD_EDGE);
+            context.fill(cardX + pw - 1, cardY, cardX + pw, cardY + totalHeight, PotatoTheme.HUD_EDGE);
             drawBorder(context, cardX, cardY, pw, 2);
             drawBorder(context, cardX, cardY + totalHeight - 2, pw, 2);
             drawBorderVertical(context, cardX, cardY, 2, totalHeight);
@@ -480,7 +482,7 @@ public class ScanResultsOverlay {
                y += lh + 2;
             }
 
-            context.fill(cardX + pad, y, cardX + pw - pad, y + 1, 0x554A3480);
+            context.fill(cardX + pad, y, cardX + pw - pad, y + 1, PotatoTheme.HUD_DIVIDER);
             y += 4;
             int itemCount = displayableCount;
             int seymourTotal = player.getSeymourPieceCount();
