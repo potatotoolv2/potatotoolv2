@@ -1,0 +1,15 @@
+# Store text files with LF in the repository. Working copies are checked out
+# with the platform's native endings, so Windows still gets CRLF on disk.
+* text=auto
+
+# Scripts that must keep specific endings regardless of platform.
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+*.sh    text eol=lf
+gradlew text eol=lf
+
+# Never touch these.
+*.jar binary
+*.png binary
+*.ico binary
+*.zip binary

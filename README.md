@@ -6,7 +6,7 @@ Client-side Fabric mod for Hypixel SkyBlock. Scans players around you for fairy 
 
 ## Download
 
-Grab the latest jar from the [Releases](https://github.com/potatotoolv2/potatotoolv2/releases) page, or build it yourself (see [Build](#build)).
+No prebuilt jar is published here yet, so build it from source with the [Build](#build) steps below.
 
 ## Install
 
