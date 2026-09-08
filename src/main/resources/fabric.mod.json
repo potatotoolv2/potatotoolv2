@@ -6,7 +6,7 @@
 	"description": "PotatoToolV2 for Hypixel SkyBlock collecting and analysis.",
 	"authors": ["prpl"],
 	"contact": {
-		"homepage": "https://discord.gg/potatotool"
+		"homepage": "https://discord.gg/PvEYc4Kwy"
 	},
 	"license": "MIT",
 	"environment": "client",
@@ -26,7 +26,7 @@
 	"custom": {
 		"modmenu": {
 			"links": {
-				"modmenu.discord": "https://discord.gg/potatotool"
+				"modmenu.discord": "https://discord.gg/PvEYc4Kwy"
 			}
 		}
 	}

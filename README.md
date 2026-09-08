@@ -1,8 +1,10 @@
 # PotatoToolV2
 
+[![Discord](https://img.shields.io/badge/Discord-join%20the%20server-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/PvEYc4Kwy)
+
 Client-side Fabric mod for Hypixel SkyBlock. Scans players around you for fairy / crystal / exotic / Seymour / skins and other collectibles, then shows hits in chat, HUD, Discord, and a local cache.
 
-**MC 26.1.2** · Fabric · Java 25 · Discord: [discord.gg/potatotool](https://discord.gg/potatotool)
+**MC 26.1.2** · Fabric · Java 25 · Discord: [discord.gg/PvEYc4Kwy](https://discord.gg/PvEYc4Kwy)
 
 ## Download
 
@@ -60,6 +62,10 @@ The jar lands in `build/libs/potato-tool-v2-1.0.3-mc26.1.2.jar`.
 ## Your data
 
 Everything the mod saves stays on your machine, in your Minecraft `config` folder. API keys and webhook URLs you enter are stored locally and are never committed to this repo.
+
+## Support
+
+Setup help, bug reports, and feature requests go through Discord: **[discord.gg/PvEYc4Kwy](https://discord.gg/PvEYc4Kwy)** — open a ticket in `#create-a-ticket`.
 
 ## License
 

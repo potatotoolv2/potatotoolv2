@@ -219,7 +219,7 @@ public class ModMenuIntegration {
       private boolean autoBuyRulesFocused = false;
       private static final float DISCORD_TEXT_SCALE = 0.75F;
       private static final int DISCORD_BTN_X_OFFSET = 8;
-      private static final String DISCORD_INVITE = "https://discord.gg/potatotool";
+      private static final String DISCORD_INVITE = "https://discord.gg/PvEYc4Kwy";
       private static final int DISCORD_COLOR = -10983950;
       private static final int DEFAULT_PANEL_W = 980;
       private static final int DEFAULT_PANEL_H = 700;
@@ -319,9 +319,9 @@ public class ModMenuIntegration {
 
                if (lx >= discordX && lx < discordX + dScaledW && ly >= discordY0 && ly < discordY0 + dScaledH) {
                   if (this.minecraft != null) {
-                     this.minecraft.keyboardHandler.setClipboard("https://discord.gg/potatotool");
+                     this.minecraft.keyboardHandler.setClipboard("https://discord.gg/PvEYc4Kwy");
                      if (this.minecraft.player != null) {
-                        this.minecraft.player.sendSystemMessage(Component.literal("§aDiscord link copied! §7https://discord.gg/potatotool"));
+                        this.minecraft.player.sendSystemMessage(Component.literal("§aDiscord link copied! §7https://discord.gg/PvEYc4Kwy"));
                      }
                   }
 
@@ -1127,9 +1127,9 @@ public class ModMenuIntegration {
                int discordY0 = (TITLE_BAR_HEIGHT - dScaledH) / 2;
                if (ly < TITLE_BAR_HEIGHT && lx >= discordX && lx < discordX + dScaledW && ly >= discordY0 && ly < discordY0 + dScaledH) {
                   if (this.minecraft != null) {
-                     this.minecraft.keyboardHandler.setClipboard("https://discord.gg/potatotool");
+                     this.minecraft.keyboardHandler.setClipboard("https://discord.gg/PvEYc4Kwy");
                      if (this.minecraft.player != null) {
-                        this.minecraft.player.sendSystemMessage(Component.literal("§aDiscord link copied! §7https://discord.gg/potatotool"));
+                        this.minecraft.player.sendSystemMessage(Component.literal("§aDiscord link copied! §7https://discord.gg/PvEYc4Kwy"));
                      }
                   }
 
@@ -3094,7 +3094,7 @@ public class ModMenuIntegration {
             && mouseY < discordBtnY + discordScaledH;
          context.text(this.font, discordText, discordBtnX, discordBtnY, discordHover ? 0xFF4A8FD4 : this.TEXT_MUTED, false);
          if (discordHover) {
-            context.text(this.font, "discord.gg/potatotool", mouseX + 6, mouseY - 4, this.TEXT_WHITE, false);
+            context.text(this.font, "discord.gg/PvEYc4Kwy", mouseX + 6, mouseY - 4, this.TEXT_WHITE, false);
          }
 
          context.fill(bx, by + TITLE_BAR_HEIGHT, bx + 180, by + this.panelH, bgSidebar);
