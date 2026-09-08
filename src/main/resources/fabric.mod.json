@@ -1,0 +1,33 @@
+{
+	"schemaVersion": 1,
+	"id": "potato-tool-v2",
+	"version": "${version}",
+	"name": "PotatoToolV2",
+	"description": "PotatoToolV2 for Hypixel SkyBlock collecting and analysis.",
+	"authors": ["prpl"],
+	"contact": {
+		"homepage": "https://discord.gg/potatotool"
+	},
+	"license": "MIT",
+	"environment": "client",
+	"entrypoints": {
+		"client": ["com.potatotool.PotatoToolMod"]
+	},
+	"mixins": ["potato-tool.mixins.json"],
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"fabric-api": "*",
+		"minecraft": "~26.1",
+		"java": ">=25"
+	},
+	"suggests": {
+		"modmenu": "*"
+	},
+	"custom": {
+		"modmenu": {
+			"links": {
+				"modmenu.discord": "https://discord.gg/potatotool"
+			}
+		}
+	}
+}
