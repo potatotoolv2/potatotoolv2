@@ -166,10 +166,11 @@ public class ScanResultsOverlay {
          case "POTATO":
             return POTATO_COLORS;
          case "RAINBOW":
-         case "NEBULA":
             return PotatoTheme.eggParade();
-         case "BLUE":
+         case "NEBULA":
             return PotatoTheme.nebulaStrip();
+         case "BLUE":
+            return PotatoTheme.blueFlowStrip();
          default:
             return WHITE_COLORS;
       }

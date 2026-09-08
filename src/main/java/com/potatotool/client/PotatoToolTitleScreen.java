@@ -157,7 +157,7 @@ public class PotatoToolTitleScreen extends Screen {
       int x = centerX - totalW / 2;
       for (int i = 0; i < title.length(); i++) {
          char ch = title.charAt(i);
-         int color = ch == ' ' ? -1 : com.potatotool.util.PotatoTheme.eggShifted(i);
+         int color = ch == ' ' ? -1 : com.potatotool.util.PotatoTheme.blueFlowShifted(i);
          context.text(this.font, String.valueOf(ch), x, y, color, false);
          x += widths[i];
       }

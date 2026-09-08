@@ -19,6 +19,9 @@ public final class PotatoTheme {
    public static final int MUTED = 0xFF9B8EC4;
    public static final int LOOKUP_EDGE = 0xFF2A1B4A;
 
+   private static final int FLOW_DEEP = 0x2F6FE0;
+   private static final int FLOW_LIGHT = 0x9BD4FF;
+
    private static final int[] CRYSTAL_EGGS = {0xFFC6A3D4, 0xFFB88BC9, 0xFFA875BD, 0xFF9C64B3, 0xFF8E51A6};
    private static final int[] OG_FAIRY_EGGS = {0xFFE5CCFF, 0xFFCC99FF, 0xFFB266FF, 0xFF9933FF, 0xFF7F00FF};
    private static final int[] FAIRY_EGGS = {0xFFFF99CC, 0xFFFF66B2};
@@ -76,6 +79,34 @@ public final class PotatoTheme {
       return activeEggs();
    }
 
+   public static int blueFlow() {
+      return blueFlowAt(0.0);
+   }
+
+   private static int blueFlowAt(double offset) {
+      double phase = (Math.sin(System.currentTimeMillis() / 480.0 + offset) + 1.0) * 0.5;
+      return blendRgb(FLOW_DEEP, FLOW_LIGHT, phase);
+   }
+
+   public static int[] blueFlowStrip() {
+      int[] out = new int[8];
+
+      for (int i = 0; i < out.length; i++) {
+         out[i] = 0xFF000000 | blueFlowAt(i * 0.55);
+      }
+
+      return out;
+   }
+
+   public static int blueFlowShifted(int index) {
+      return 0xFF000000 | blueFlowAt(index * 0.35);
+   }
+
+   public static int accentNow() {
+      ScannerConfig config = PotatoToolMod.getInstance() != null ? PotatoToolMod.getInstance().getConfig() : null;
+      return guiAccentRgb(config);
+   }
+
    public static int stripOffset(int length) {
       if (length <= 0) {
          return 0;
@@ -87,9 +118,9 @@ public final class PotatoTheme {
 
    public static MutableComponent chatBorder() {
       MutableComponent line = Component.literal("");
-      int off = (int)(System.currentTimeMillis() / 700L);
+
       for (int i = 0; i < 18; i++) {
-         int rgb = (i % 5 == 0 ? egg(off + i) : (i % 2 == 0 ? 0x6EA8FF : 0xA78BFA)) & 0xFFFFFF;
+         int rgb = blueFlowAt(i * 0.35) & 0xFFFFFF;
          line.append(Component.literal("━").withStyle(s -> s.withColor(TextColor.fromRgb(rgb))));
       }
 
@@ -97,7 +128,7 @@ public final class PotatoTheme {
    }
 
    public static MutableComponent branded(String text) {
-      int rgb = eggNow() & 0xFFFFFF;
+      int rgb = accentNow() & 0xFFFFFF;
       return Component.literal(text).withStyle(s -> s.withColor(TextColor.fromRgb(rgb)));
    }
 
@@ -122,11 +153,7 @@ public final class PotatoTheme {
 
       String key = config.guiAccentTheme == null ? "" : config.guiAccentTheme.trim().toUpperCase();
       return switch (key) {
-         case "BLUE_FLOW" -> {
-            double t = System.currentTimeMillis() / 480.0;
-            double phase = (Math.sin(t) + 1.0) * 0.5;
-            yield blendRgb(0x4C8FFF, 0xA78BFA, phase);
-         }
+         case "BLUE_FLOW" -> blueFlow();
          case "VIOLET_FLOW" -> {
             double t = System.currentTimeMillis() / 520.0;
             double phase = (Math.sin(t) + 1.0) * 0.5;

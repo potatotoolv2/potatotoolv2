@@ -123,7 +123,7 @@ public class ScannerConfig {
    public int hudOffsetX = 80;
    public int hudOffsetY = 10;
    public double hudScale = 1.0;
-   public String hudBorderTheme = "WHITE";
+   public String hudBorderTheme = "BLUE";
    public boolean hudFairyAccentEnabled = false;
    public int hudColorRgb = 0xFFFFFF;
    public int guiAccentRgb = 0x6EA8FF;

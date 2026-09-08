@@ -409,7 +409,7 @@ public class ModernSettingsScreen extends Screen {
       ctx.fill(px, top, px + pw, top + panelH, PotatoTheme.PANEL);
       ctx.fill(px, top, px + pw, top + 56, PotatoTheme.HEADER);
       ctx.fill(px, top + 56 - 1, px + pw, top + 56, PotatoTheme.BORDER);
-      int[] strip = PotatoTheme.nebulaStrip();
+      int[] strip = PotatoTheme.blueFlowStrip();
       int segW = Math.max(1, pw / strip.length);
 
       for (int i = 0; i < strip.length; i++) {
@@ -430,7 +430,7 @@ public class ModernSettingsScreen extends Screen {
       int tabGap = 4;
       int tabY = top + 56 + 6;
       int indX = px + 8 + this.currentTab * (tabW + tabGap);
-      ctx.fill(indX, tabY + 24, indX + tabW, tabY + 24 + 2, PotatoTheme.eggNow());
+      ctx.fill(indX, tabY + 24, indX + tabW, tabY + 24 + 2, 0xFF000000 | PotatoTheme.accentNow());
 
       for (ModernSettingsScreen.SectionLabel s : this.sectionLabels) {
          ctx.fill(s.x, s.y + 4, s.x + s.w, s.y + 5, PotatoTheme.BORDER);
