@@ -116,17 +116,6 @@ public final class PotatoTheme {
       return (int)(t % 700L * length / 700L) % length;
    }
 
-   public static MutableComponent chatBorder() {
-      MutableComponent line = Component.literal("");
-
-      for (int i = 0; i < 18; i++) {
-         int rgb = blueFlowAt(i * 0.35) & 0xFFFFFF;
-         line.append(Component.literal("━").withStyle(s -> s.withColor(TextColor.fromRgb(rgb))));
-      }
-
-      return line;
-   }
-
    public static MutableComponent branded(String text) {
       int rgb = accentNow() & 0xFFFFFF;
       return Component.literal(text).withStyle(s -> s.withColor(TextColor.fromRgb(rgb)));

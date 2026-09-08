@@ -1,7 +1,6 @@
 package com.potatotool.util;
 
 import com.potatotool.PotatoToolMod;
-import com.potatotool.config.ScannerConfig;
 import com.potatotool.model.ScannedItem;
 import com.potatotool.model.ScannedPlayer;
 import java.util.Collection;
@@ -14,29 +13,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.TextColor;
 
 public class ChatMessageFormatter {
-   private static final int MAX_ITEMS_SHOWN = 4;
-   private static final String ISRAEL_SEGMENT = "§9━§f━";
-   private static final String POTATO_SEGMENT = "§6━";
-
-   private static String getBorderTheme() {
-      if (PotatoToolMod.getInstance() != null) {
-         ScannerConfig c = PotatoToolMod.getInstance().getConfig();
-         if (c != null && c.hudBorderTheme != null && !c.hudBorderTheme.isEmpty()) {
-            return c.hudBorderTheme.toUpperCase();
-         }
-      }
-
-      return "WHITE";
-   }
-
-   private static Component themedBorder() {
-      return switch (getBorderTheme()) {
-         case "ISRAEL" -> Component.literal(ISRAEL_SEGMENT.repeat(6));
-         case "POTATO" -> Component.literal(POTATO_SEGMENT.repeat(8));
-         case "BLUE", "NEBULA", "RAINBOW" -> PotatoTheme.chatBorder();
-         default -> Component.literal("§f" + "━".repeat(18));
-      };
-   }
+   private static final int MAX_HOVER_ITEMS = 30;
 
    public static void sendPlayerScanResults(ScannedPlayer player, int totalPlayersInLobby, int newlyScannedCount, int apiDisabledCount) {
       Minecraft client = Minecraft.getInstance();
@@ -46,26 +23,37 @@ public class ChatMessageFormatter {
    }
 
    public static void sendPlayerBlock(ScannedPlayer player) {
-      sendMessage(themedBorder());
-      int level = (int)player.getSkyblockLevel();
+      sendMessage(nameLine(player));
+      sendMessage(profileLine(player));
+
+      List<ScannedItem> items = player.getDisplayableItems();
+      if (!items.isEmpty()) {
+         sendMessage(itemsLine(player, items));
+      }
+   }
+
+   private static MutableComponent nameLine(ScannedPlayer player) {
+      MutableComponent line = Component.literal("");
       String rank = player.getRankFormatted();
-      MutableComponent header = Component.literal("");
       if (rank != null && !rank.isEmpty()) {
-         header.append(Component.literal(rank + " "));
+         line.append(Component.literal(rank + " "));
       }
 
-      header.append(clickablePartyUsername(player.getUsername(), player.getRankNameColor()));
-      header.append(clickablePartyLink(player.getUsername()));
-      sendMessage(header);
+      line.append(clickablePartyUsername(player.getUsername(), player.getRankNameColor()));
+      line.append(clickablePartyLink(player.getUsername()));
+      return line;
+   }
 
-      MutableComponent meta = Component.literal("§7Lv ");
-      meta.append(Component.literal(levelColor(level) + "§l" + level));
-
+   private static MutableComponent profileLine(ScannedPlayer player) {
+      MutableComponent line = Component.literal("");
       String selected = player.getSelectedProfile();
+      boolean first = true;
       if (selected != null && !selected.isEmpty()) {
-         meta.append(Component.literal(" §8| "));
-         meta.append(ProfileStyle.component(selected));
-         meta.append(Component.literal(" §a★"));
+         int level = (int)player.getSkyblockLevel();
+         line.append(Component.literal("§7Lv " + levelColor(level) + "§l" + level + " "));
+         line.append(ProfileStyle.component(selected));
+         line.append(Component.literal(" §a★"));
+         first = false;
       }
 
       List<ScannedPlayer.ProfileInfo> profiles = player.getProfiles();
@@ -75,55 +63,56 @@ public class ChatMessageFormatter {
                continue;
             }
 
+            if (!first) {
+               line.append(Component.literal(" §8| "));
+            }
+
             String name = info.getName() == null || info.getName().isBlank() ? "Unknown" : info.getName();
-            meta.append(Component.literal(" §8| "));
-            meta.append(ProfileStyle.component(name));
-            meta.append(Component.literal(" §7Lv " + levelColor(info.getLevel()) + info.getLevel()));
-            meta.append(Component.literal(ProfileStyle.modeTag(info.getGameMode())));
+            line.append(Component.literal("§7Lv " + levelColor(info.getLevel()) + info.getLevel() + " "));
+            line.append(ProfileStyle.component(name));
+            line.append(Component.literal(ProfileStyle.modeTag(info.getGameMode())));
+            first = false;
          }
       }
 
-      List<ScannedItem> items = player.getDisplayableItems();
+      return line;
+   }
+
+   private static MutableComponent itemsLine(ScannedPlayer player, List<ScannedItem> items) {
       int itemCount = items.size();
-      if (itemCount > 0) {
-         meta.append(Component.literal(" §8| §f" + itemCount + (itemCount == 1 ? " item" : " items")));
-         int seymourTotal = player.getSeymourPieceCount();
-         if (seymourTotal > 0) {
-            meta.append(Component.literal(" §8| §dSeymour " + seymourTotal));
-            int seymourRare = player.getSeymourRareCount();
-            if (seymourRare > 0) {
-               meta.append(Component.literal(" §7(" + seymourRare + " rare)"));
-            }
+      int shown = Math.min(MAX_HOVER_ITEMS, itemCount);
+      MutableComponent hover = Component.empty();
+
+      for (int i = 0; i < shown; i++) {
+         if (i > 0) {
+            hover.append(Component.literal("\n"));
+         }
+
+         hover.append(formatItemHoverLine(items.get(i)));
+      }
+
+      if (itemCount > shown) {
+         hover.append(Component.literal("\n§8+" + (itemCount - shown) + " more"));
+      }
+
+      TextColor accent = TextColor.fromRgb(PotatoTheme.accentNow());
+      MutableComponent line = Component.literal("");
+      line.append(
+         Component.literal(itemCount + (itemCount == 1 ? " item" : " items"))
+            .withStyle(s -> s.withColor(accent).withUnderlined(true))
+      );
+      line.append(Component.literal(" §8· §7hover"));
+
+      int seymourTotal = player.getSeymourPieceCount();
+      if (seymourTotal > 0) {
+         line.append(Component.literal(" §8· §dSeymour " + seymourTotal));
+         int seymourRare = player.getSeymourRareCount();
+         if (seymourRare > 0) {
+            line.append(Component.literal(" §7(" + seymourRare + " rare)"));
          }
       }
 
-      sendMessage(meta);
-
-      if (itemCount > 0) {
-         int shown = Math.min(MAX_ITEMS_SHOWN, itemCount);
-         for (int i = 0; i < shown; i++) {
-            sendMessage(formatItemChatLine(items.get(i)));
-         }
-
-         if (itemCount > MAX_ITEMS_SHOWN) {
-            int extra = itemCount - MAX_ITEMS_SHOWN;
-            MutableComponent hover = Component.empty();
-            for (int i = MAX_ITEMS_SHOWN; i < itemCount; i++) {
-               if (i > MAX_ITEMS_SHOWN) {
-                  hover.append(Component.literal("\n"));
-               }
-
-               hover.append(formatItemHoverLine(items.get(i)));
-            }
-
-            sendMessage(
-               Component.literal("§8+" + extra + " more")
-                  .withStyle(s -> s.withHoverEvent(new ShowText(hover)))
-            );
-         }
-      }
-
-      sendMessage(themedBorder());
+      return line.withStyle(s -> s.withHoverEvent(new ShowText(hover)));
    }
 
    private static String itemCategoryLabel(ScannedItem item) {
@@ -145,36 +134,6 @@ public class ChatMessageFormatter {
       }
 
       return location;
-   }
-
-   private static MutableComponent formatItemChatLine(ScannedItem item) {
-      String itemName = ItemNames.resolve(item);
-      String catTag = itemCategoryLabel(item);
-      MutableComponent itemLine = Component.literal("§8• ");
-      String hex = item.getHexColor();
-      if (hex != null && !hex.isEmpty()) {
-         int rgb = ColorAnalyzer.hexToInt(hex);
-         TextColor textColor = TextColor.fromRgb(rgb);
-         itemLine.append(Component.literal(itemName).withStyle(s -> s.withColor(textColor)));
-         String hexDisplay = hex.startsWith("#") ? hex : "#" + hex;
-         itemLine.append(Component.literal(" ").append(Component.literal(hexDisplay).withStyle(s -> s.withColor(textColor))));
-      } else {
-         itemLine.append(Component.literal(getCategoryColor(item.getCategory()) + itemName));
-      }
-
-      itemLine.append(Component.literal("  " + getCategoryColor(item.getCategory()) + catTag));
-      String loc = formatLocation(item.getLocation());
-      if (!loc.isEmpty()) {
-         itemLine.append(Component.literal(" §8| §7" + loc));
-      }
-
-      String profile = item.getProfileName();
-      if (profile != null && !profile.isBlank()) {
-         itemLine.append(Component.literal(" "));
-         itemLine.append(ProfileStyle.component(profile));
-      }
-
-      return itemLine;
    }
 
    private static MutableComponent formatItemHoverLine(ScannedItem item) {
