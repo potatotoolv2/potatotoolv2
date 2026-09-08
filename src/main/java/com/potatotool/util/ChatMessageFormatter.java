@@ -5,9 +5,7 @@ import com.potatotool.model.ScannedItem;
 import com.potatotool.model.ScannedPlayer;
 import java.util.Collection;
 import java.util.List;
-import java.net.URI;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.ClickEvent.OpenUrl;
 import net.minecraft.network.chat.ClickEvent.RunCommand;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent.ShowText;
@@ -33,10 +31,26 @@ public class ChatMessageFormatter {
       if (!items.isEmpty()) {
          sendMessage(itemsLine(player, items));
       }
+
+      int apiDisabled = player.getApiDisabledProfileCount();
+      int profileCount = player.getProfiles() == null ? 0 : player.getProfiles().size();
+      if (apiDisabled > 0) {
+         sendMessage(Component.literal("§aAPI Disabled Profiles: §c" + apiDisabled + "§a/" + profileCount));
+      }
+
+      int highest = player.getHighestLevel();
+      if (highest > 0) {
+         sendMessage(Component.literal("§aHighest Level: " + levelColor(highest) + highest));
+      }
    }
 
    private static MutableComponent nameLine(ScannedPlayer player) {
-      MutableComponent line = Component.literal("§7Name: ");
+      int highest = player.getHighestLevel();
+      MutableComponent line = Component.literal("§aName: ");
+      if (highest > 0) {
+         line.append(Component.literal("§a[" + levelColor(highest) + highest + "§a] "));
+      }
+
       String rank = player.getRankFormatted();
       if (rank != null && !rank.isEmpty()) {
          line.append(Component.literal(rank + " "));
@@ -47,7 +61,7 @@ public class ChatMessageFormatter {
    }
 
    private static MutableComponent profileLine(ScannedPlayer player) {
-      MutableComponent line = Component.literal("§7Profiles: ");
+      MutableComponent line = Component.literal("§aProfiles: ");
       MutableComponent hover = Component.empty();
       List<ScannedPlayer.ProfileInfo> profiles = player.getProfiles();
       boolean first = true;
@@ -55,15 +69,22 @@ public class ChatMessageFormatter {
       if (profiles != null) {
          for (ScannedPlayer.ProfileInfo info : profiles) {
             if (!first) {
-               line.append(Component.literal("§7, "));
+               line.append(Component.literal("§a, "));
                hover.append(Component.literal("\n"));
             }
 
             String name = info.getName() == null || info.getName().isBlank() ? "Unknown" : info.getName();
-            MutableComponent entry = Component.literal("§8[" + levelColor(info.getLevel()) + info.getLevel() + "§8] ");
+            MutableComponent entry = Component.literal("§a[" + levelColor(info.getLevel()) + info.getLevel() + "§a] ");
             entry.append(ProfileStyle.component(name));
             entry.append(Component.literal(ProfileStyle.modeTag(info.getGameMode())));
-            entry.append(Component.literal(info.isSelected() ? " §6★" : " §c★"));
+            if (info.isSelected()) {
+               entry.append(Component.literal(" §6★"));
+            }
+
+            if (info.isApiDisabled()) {
+               entry.append(Component.literal(" §c✖"));
+            }
+
             line.append(entry);
             hover.append(entry);
             first = false;
@@ -75,31 +96,19 @@ public class ChatMessageFormatter {
          return line;
       }
 
-      hover.append(Component.literal("\n\n§6★ §7= selected profile"));
+      hover.append(Component.literal("\n\n§6★ §7= selected profile\n§c✖ §7= inventory API off"));
       return line.withStyle(s -> s.withHoverEvent(new ShowText(hover)));
    }
 
    private static MutableComponent actionsLine(ScannedPlayer player) {
-      String name = player.getUsername();
       MutableComponent line = Component.literal("§aActions: ");
-      line.append(commandButton("§a[Party]", "/ptparty " + name, "§7Party " + name + "."));
-      line.append(Component.literal(" "));
-      line.append(commandButton("§a[Visit]", "/visit " + name, "§7Open visit menu."));
-      line.append(Component.literal(" "));
-      line.append(urlButton("§a[SkyCrypt]", "https://sky.shiiyu.moe/stats/" + name, "§7Open SkyCrypt."));
-      line.append(Component.literal(" "));
-      line.append(urlButton("§a[NameMC]", "https://namemc.com/profile/" + name, "§7Open NameMC."));
+      line.append(commandButton("§a[Party]", "/ptparty " + player.getUsername(), "§7Party " + player.getUsername() + "."));
       return line;
    }
 
    private static MutableComponent commandButton(String label, String command, String tooltip) {
       return Component.literal(label)
          .withStyle(s -> s.withClickEvent(new RunCommand(command)).withHoverEvent(new ShowText(Component.literal(tooltip))));
-   }
-
-   private static MutableComponent urlButton(String label, String url, String tooltip) {
-      return Component.literal(label)
-         .withStyle(s -> s.withClickEvent(new OpenUrl(URI.create(url))).withHoverEvent(new ShowText(Component.literal(tooltip))));
    }
 
    private static MutableComponent itemsLine(ScannedPlayer player, List<ScannedItem> items) {
@@ -120,7 +129,7 @@ public class ChatMessageFormatter {
       }
 
       MutableComponent line = Component.literal(
-         "§bCurrent Items §7(§6" + itemCount + " Item" + (itemCount == 1 ? "" : "s") + "§7) §8(Hover)"
+         "§bCurrent Items §a(§6" + itemCount + " Item" + (itemCount == 1 ? "" : "s") + "§a) §8(Hover)"
       );
 
       int seymourTotal = player.getSeymourPieceCount();

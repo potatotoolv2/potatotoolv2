@@ -917,7 +917,7 @@ public class PlayerScannerManager {
          profileLevel = (int)Math.floor(exp / 100.0);
       }
 
-      player.addProfile(new ScannedPlayer.ProfileInfo(profileName, profileLevel, selected, gameMode));
+      player.addProfile(new ScannedPlayer.ProfileInfo(profileName, profileLevel, selected, gameMode, !hasInventoryApi(memberData)));
       if (selected || player.getSelectedProfile() == null || player.getSelectedProfile().isBlank()) {
          player.setSelectedProfile(profileName);
          player.setSkyblockLevel(profileLevel);
@@ -995,6 +995,15 @@ public class PlayerScannerManager {
       }
 
       return this.config.scanLowLevelPlayers || level >= 50.0;
+   }
+
+   private static boolean hasInventoryApi(JsonObject memberData) {
+      if (memberData == null || !memberData.has("inventory")) {
+         return false;
+      }
+
+      JsonObject inventory = memberData.getAsJsonObject("inventory");
+      return inventory.has("inv_contents") && inventory.getAsJsonObject("inv_contents").has("data");
    }
 
    private void scanInventories(ScannedPlayer player, JsonObject memberData) {

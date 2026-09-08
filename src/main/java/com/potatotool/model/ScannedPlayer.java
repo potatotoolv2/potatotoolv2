@@ -200,12 +200,18 @@ public class ScannedPlayer {
       private final int level;
       private final boolean selected;
       private final String gameMode;
+      private final boolean apiDisabled;
 
       public ProfileInfo(String name, int level, boolean selected, String gameMode) {
+         this(name, level, selected, gameMode, false);
+      }
+
+      public ProfileInfo(String name, int level, boolean selected, String gameMode, boolean apiDisabled) {
          this.name = name;
          this.level = level;
          this.selected = selected;
          this.gameMode = gameMode;
+         this.apiDisabled = apiDisabled;
       }
 
       public String getName() {
@@ -223,6 +229,33 @@ public class ScannedPlayer {
       public String getGameMode() {
          return this.gameMode;
       }
+
+      /** True when this profile's inventory API is off, so its items could not be read. */
+      public boolean isApiDisabled() {
+         return this.apiDisabled;
+      }
+   }
+
+   public int getHighestLevel() {
+      int highest = 0;
+
+      for (ProfileInfo profile : this.profiles) {
+         highest = Math.max(highest, profile.getLevel());
+      }
+
+      return highest;
+   }
+
+   public int getApiDisabledProfileCount() {
+      int count = 0;
+
+      for (ProfileInfo profile : this.profiles) {
+         if (profile.isApiDisabled()) {
+            count++;
+         }
+      }
+
+      return count;
    }
 
    public boolean hasSpecialItems() {
