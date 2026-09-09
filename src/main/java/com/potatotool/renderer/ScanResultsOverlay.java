@@ -6,6 +6,7 @@ import com.potatotool.manager.PlayerScannerManager;
 import com.potatotool.model.ScannedItem;
 import com.potatotool.model.ScannedPlayer;
 import com.potatotool.util.ColorAnalyzer;
+import com.potatotool.util.HudPalette;
 import com.potatotool.util.PotatoTheme;
 import com.potatotool.util.ProfileStyle;
 import java.util.ArrayList;
@@ -156,6 +157,8 @@ public class ScanResultsOverlay {
 
       String theme = config.hudBorderTheme != null ? config.hudBorderTheme.toUpperCase() : "WHITE";
       switch (theme) {
+         case "PRESET":
+            return HudPalette.of(config).animatedStrip();
          case "CUSTOM": {
             int c = 0xFF000000 | (config.hudColorRgb & 16777215);
             int hi = 0xFF000000 | Math.min(16777215, (config.hudColorRgb & 16777215) + 0x202020);
@@ -182,7 +185,7 @@ public class ScanResultsOverlay {
       }
 
       String theme = config.hudBorderTheme != null ? config.hudBorderTheme.toUpperCase() : "WHITE";
-      if ("POTATO".equals(theme) || "ISRAEL".equals(theme) || "CUSTOM".equals(theme) || "WHITE".equals(theme)) {
+      if ("POTATO".equals(theme) || "ISRAEL".equals(theme) || "CUSTOM".equals(theme) || "WHITE".equals(theme) || "PRESET".equals(theme)) {
          return 0;
       }
 
@@ -432,9 +435,10 @@ public class ScanResultsOverlay {
             int displayableCount = player.getDisplayableItemCount();
             int itemsHeight = Math.min(displayableCount, 4) * lh + (displayableCount > 4 ? lh : 0);
             int totalHeight = headerHeight + profileHeight + itemsHeight + pad * 2 + 8;
-            context.fill(cardX, cardY, cardX + pw, cardY + totalHeight, PotatoTheme.HUD_CARD);
-            context.fill(cardX, cardY, cardX + 1, cardY + totalHeight, PotatoTheme.HUD_EDGE);
-            context.fill(cardX + pw - 1, cardY, cardX + pw, cardY + totalHeight, PotatoTheme.HUD_EDGE);
+            HudPalette hudPalette = HudPalette.of(PotatoToolMod.getInstance() != null ? PotatoToolMod.getInstance().getConfig() : null);
+            context.fill(cardX, cardY, cardX + pw, cardY + totalHeight, hudPalette.card());
+            context.fill(cardX, cardY, cardX + 1, cardY + totalHeight, hudPalette.edge());
+            context.fill(cardX + pw - 1, cardY, cardX + pw, cardY + totalHeight, hudPalette.edge());
             drawBorder(context, cardX, cardY, pw, 2);
             drawBorder(context, cardX, cardY + totalHeight - 2, pw, 2);
             drawBorderVertical(context, cardX, cardY, 2, totalHeight);
@@ -482,7 +486,7 @@ public class ScanResultsOverlay {
                y += lh + 2;
             }
 
-            context.fill(cardX + pad, y, cardX + pw - pad, y + 1, PotatoTheme.HUD_DIVIDER);
+            context.fill(cardX + pad, y, cardX + pw - pad, y + 1, hudPalette.divider());
             y += 4;
             int itemCount = displayableCount;
             int seymourTotal = player.getSeymourPieceCount();

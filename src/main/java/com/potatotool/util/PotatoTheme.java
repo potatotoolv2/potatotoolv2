@@ -145,6 +145,7 @@ public final class PotatoTheme {
 
       String key = config.guiAccentTheme == null ? "" : config.guiAccentTheme.trim().toUpperCase();
       return switch (key) {
+         case "PRESET" -> GuiPalette.of(config).accentRgb();
          case "BLUE_FLOW" -> blueFlow();
          case "VIOLET_FLOW" -> {
             double t = System.currentTimeMillis() / 520.0;

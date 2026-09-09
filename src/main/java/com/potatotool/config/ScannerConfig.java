@@ -123,11 +123,13 @@ public class ScannerConfig {
    public int hudOffsetX = 80;
    public int hudOffsetY = 10;
    public double hudScale = 1.0;
-   public String hudBorderTheme = "BLUE";
+   public String hudBorderTheme = "PRESET";
+   public String hudPreset = "MIDNIGHT";
    public boolean hudFairyAccentEnabled = false;
    public int hudColorRgb = 0xFFFFFF;
-   public int guiAccentRgb = 0x6EA8FF;
-   public String guiAccentTheme = "BLUE_FLOW";
+   public int guiAccentRgb = 0x5B9DFF;
+   public String guiAccentTheme = "PRESET";
+   public String guiPreset = "MIDNIGHT";
    public int guiAlpha = 150;
    public boolean guiDarkMode = true;
    public String discordWebhookUrl = "";
@@ -282,6 +284,14 @@ public class ScannerConfig {
 
             if (!hasGuiDarkModeKey) {
                config.guiDarkMode = true;
+            }
+
+            if (config.guiPreset == null || config.guiPreset.isBlank()) {
+               config.guiPreset = config.guiDarkMode ? "MIDNIGHT" : "DAYLIGHT";
+            }
+
+            if (config.hudPreset == null || config.hudPreset.isBlank()) {
+               config.hudPreset = "MIDNIGHT";
             }
 
             config.ahAutoBuyEnabled = false;

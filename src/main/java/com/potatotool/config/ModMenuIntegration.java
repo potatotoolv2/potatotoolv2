@@ -11,6 +11,8 @@ import com.potatotool.model.ScannedItem;
 import com.potatotool.model.ScannedPlayer;
 import com.potatotool.util.CosmeticSkinValuesLoader;
 import com.potatotool.util.DefaultArmorColorsLoader;
+import com.potatotool.util.GuiPalette;
+import com.potatotool.util.HudPalette;
 import com.potatotool.util.PotatoTheme;
 import com.potatotool.util.SeymourAnalyzer;
 import java.util.ArrayList;
@@ -62,16 +64,23 @@ public class ModMenuIntegration {
       private int TEXT_WHITE = 0xFFE6EAF0;
       private int TEXT_MUTED = 0xFF8B929C;
       private boolean darkGui = true;
+      /** Resolved once per frame in render so draw helpers do not each re-read the config. */
+      private GuiPalette palette = GuiPalette.MIDNIGHT;
+      /** Remembered so the title-bar Light toggle returns to the dark preset you were using. */
+      private GuiPalette lastDarkPreset = GuiPalette.MIDNIGHT;
       private static final int HIGHLIGHT_SWATCH_SIZE = 18;
       private static final int HIGHLIGHT_SWATCH_GAP = 4;
+      private static final int PRESET_CARD_W = 150;
+      private static final int PRESET_CARD_H = 44;
+      private static final int PRESET_CARD_GAP = 8;
       private static final String[] GUI_ACCENT_THEME_KEYS = new String[]{
-         "STATIC_BLUE", "BLUE_FLOW", "VIOLET_FLOW", "NEBULA", "STATIC_CYAN", "STATIC_GREEN", "STATIC_PINK", "STATIC_BROWN"
+         "PRESET", "STATIC_BLUE", "BLUE_FLOW", "VIOLET_FLOW", "NEBULA", "STATIC_CYAN", "STATIC_GREEN", "STATIC_PINK", "STATIC_BROWN"
       };
       private static final String[] GUI_ACCENT_THEME_LABELS = new String[]{
-         "Blue", "Blue Flow", "Violet Flow", "Nebula", "Cyan", "Green", "Pink", "Brown"
+         "Match preset", "Blue", "Blue Flow", "Violet Flow", "Nebula", "Cyan", "Green", "Pink", "Brown"
       };
       private static final int[] GUI_ACCENT_THEME_COLORS = new int[]{
-         0x4A8FD4, 0x6EA8FF, 0xA78BFA, 0x8B6CFF, 4892159, 7316810, 10832495, 10841930
+         0x5B9DFF, 0x4A8FD4, 0x6EA8FF, 0xA78BFA, 0x8B6CFF, 4892159, 7316810, 10832495, 10841930
       };
       private static final int[] HIGHLIGHT_SWATCHES = new int[]{6737151, 5635925, 16733695, 16746700, 13805177, 16733525, 5614335, 16777045, 6750156, 16777215};
       private static final String[] HIGHLIGHT_COLOR_LABELS = new String[]{
@@ -225,7 +234,7 @@ public class ModMenuIntegration {
       private static final int DEFAULT_PANEL_H = 700;
       private static final int ADVANCED_LEVEL_SECTION_H = 98;
       private static final String[] HUD_ANCHORS = new String[]{"TOP_LEFT", "TOP_RIGHT", "BOTTOM_LEFT", "BOTTOM_RIGHT"};
-      private static final String[] HUD_THEMES = new String[]{"WHITE", "BLUE", "NEBULA", "RAINBOW", "ISRAEL", "POTATO", "CUSTOM"};
+      private static final String[] HUD_THEMES = new String[]{"PRESET", "WHITE", "BLUE", "NEBULA", "RAINBOW", "ISRAEL", "POTATO", "CUSTOM"};
 
       public PotatoToolConfigScreen(Screen parent) {
          super(Component.literal("PotatoToolV2"));
@@ -305,12 +314,20 @@ public class ModMenuIntegration {
                int discordX = this.panelW - 14 - dScaledW;
                int discordY0 = (TITLE_BAR_HEIGHT - dScaledH) / 2;
                ScannerConfig titleCfg = this.getConfig();
-               String modeLabel = titleCfg != null && titleCfg.guiDarkMode ? "Dark" : "Light";
+               String modeLabel = GuiPalette.of(titleCfg).isLight() ? "Light" : "Dark";
                int modeW = this.font.width(modeLabel);
                int modeX = discordX - 12 - modeW;
                if (lx >= modeX && lx < modeX + modeW && ly >= discordY0 && ly < discordY0 + dScaledH) {
                   if (titleCfg != null) {
-                     titleCfg.guiDarkMode = !titleCfg.guiDarkMode;
+                     GuiPalette current = GuiPalette.of(titleCfg);
+                     if (current.isLight()) {
+                        titleCfg.guiPreset = this.lastDarkPreset.name();
+                     } else {
+                        this.lastDarkPreset = current;
+                        titleCfg.guiPreset = GuiPalette.DAYLIGHT.name();
+                     }
+
+                     titleCfg.guiDarkMode = !GuiPalette.of(titleCfg).isLight();
                      titleCfg.save();
                   }
 
@@ -628,7 +645,15 @@ public class ModMenuIntegration {
                      }
                   } else if (this.currentPage == 6 && config != null) {
                      this.apiKeyInputFocused = false;
-                     int y = cy + 40 + 14;
+                     int hudPresetHit = this.presetCardAt(cx, cy + 40, cw, HudPalette.values().length, lx, ly);
+                     if (hudPresetHit >= 0) {
+                        config.hudPreset = HudPalette.values()[hudPresetHit].name();
+                        config.hudBorderTheme = "PRESET";
+                        config.save();
+                        return true;
+                     }
+
+                     int y = cy + 40 + this.presetBlockHeight(HudPalette.values().length, cw) + 14;
                      int anchorW = 88;
                      int anchorGap = 8;
                      int anchorPer = wrapPerRow(anchorW, anchorGap, cw);
@@ -699,14 +724,17 @@ public class ModMenuIntegration {
                      }
                   } else if (this.currentPage == 7 && config != null) {
                      this.apiKeyInputFocused = false;
-                     int opacityY = cy + 40;
-                     if (lx >= cx && lx < cx + cw && ly >= opacityY && ly < opacityY + 22) {
-                        config.guiDarkMode = !config.guiDarkMode;
+                     int presetY = cy + 40;
+                     int presetHit = this.presetCardAt(cx, presetY, cw, GuiPalette.values().length, lx, ly);
+                     if (presetHit >= 0) {
+                        GuiPalette chosen = GuiPalette.values()[presetHit];
+                        config.guiPreset = chosen.name();
+                        config.guiDarkMode = !chosen.isLight();
                         config.save();
                         return true;
                      }
 
-                     opacityY += 28;
+                     int opacityY = presetY + this.presetBlockHeight(GuiPalette.values().length, cw);
                      int opacityX = this.getAppearanceOpacityInputX(cx);
                      boolean clickInOpacityInput = lx >= opacityX && lx < opacityX + 72 && ly >= opacityY && ly < opacityY + 22;
                      int clickedHexInputRow = -1;
@@ -2986,14 +3014,11 @@ public class ModMenuIntegration {
          }
 
          ScannerConfig config = this.getConfig();
-         this.darkGui = config == null || config.guiDarkMode;
-         if (this.darkGui) {
-            this.TEXT_WHITE = 0xFFF0E9FF;
-            this.TEXT_MUTED = 0xFF9B8EC4;
-         } else {
-            this.TEXT_WHITE = 0xFF1B2430;
-            this.TEXT_MUTED = 0xFF5C6775;
-         }
+         GuiPalette palette = GuiPalette.of(config);
+         this.palette = palette;
+         this.darkGui = !palette.isLight();
+         this.TEXT_WHITE = palette.textPrimary();
+         this.TEXT_MUTED = palette.textMuted();
 
          int alpha = this.getGuiAlpha(config);
          int bx = this.panelX;
@@ -3037,37 +3062,19 @@ public class ModMenuIntegration {
             lmy = mouseY - this.panelY;
          }
 
-         context.fill(0, 0, this.width, this.height, this.darkGui ? 0x99080512 : 0x55081A28);
+         context.fill(0, 0, this.width, this.height, palette.scrim());
          int glassA = Math.max(90, Math.min(170, alpha * 2 / 3));
          int accentRgb = PotatoTheme.guiAccentRgb(config);
          int accent = 0xFF000000 | accentRgb;
-         int bgDark;
-         int bgSidebar;
-         int borderColor;
-         int selectedBg;
-         int btnBg;
-         int btnHover;
-         int titleBarBg;
-         int navSelectedText;
-         if (this.darkGui) {
-            bgDark = glassA << 24 | 0x12101C;
-            bgSidebar = glassA << 24 | 0x0C0A16;
-            borderColor = 0xAA000000 | accentRgb;
-            selectedBg = 0x55000000 | accentRgb;
-            btnBg = Math.min(210, glassA + 40) << 24 | 0x1A1628;
-            btnHover = Math.min(230, glassA + 70) << 24 | 0x2A2448;
-            titleBarBg = glassA << 24 | 0x161028;
-            navSelectedText = 0xFFF0E9FF;
-         } else {
-            bgDark = glassA << 24 | 0xF4F7FB;
-            bgSidebar = glassA << 24 | 0xE8EEF6;
-            borderColor = 0xAA7EB6E0;
-            selectedBg = 0x664A8FD4;
-            btnBg = Math.min(200, glassA + 30) << 24 | 0xFFFFFF;
-            btnHover = Math.min(220, glassA + 50) << 24 | 0xD6E8FA;
-            titleBarBg = glassA << 24 | 0xF8FBFF;
-            navSelectedText = 0xFF1B3A5C;
-         }
+         int panelA = Math.min(245, glassA + 65);
+         int bgDark = palette.background(panelA);
+         int bgSidebar = palette.sidebar(panelA);
+         int borderColor = palette.border(255);
+         int selectedBg = palette.accentWash(160);
+         int btnBg = palette.surface(Math.min(235, glassA + 70));
+         int btnHover = palette.surfaceHover(Math.min(250, glassA + 95));
+         int titleBarBg = palette.titleBar(panelA);
+         int navSelectedText = palette.textPrimary();
 
          context.fill(bx - 1, by - 1, bx + this.panelW + 1, by + this.panelH + 1, borderColor);
          context.fill(bx, by, bx + this.panelW, by + TITLE_BAR_HEIGHT, titleBarBg);
@@ -3103,12 +3110,16 @@ public class ModMenuIntegration {
 
          for (int i = 0; i < NAV_LABELS.length; i++) {
             int y0 = navY0 + i * 24;
-            if (this.currentPage == i) {
-               context.fill(bx, by + y0, bx + 180 - 1, by + y0 + 22, selectedBg);
-               context.fill(bx, by + y0, bx + 2, by + y0 + 22, accent);
+            boolean navSelected = this.currentPage == i;
+            boolean navHover = !navSelected && lmx >= 0 && lmx < 180 && lmy >= y0 && lmy < y0 + 22;
+            if (navSelected) {
+               context.fill(bx + 3, by + y0, bx + 180 - 1, by + y0 + 22, selectedBg);
+               context.fill(bx, by + y0 + 3, bx + 3, by + y0 + 19, accent);
+            } else if (navHover) {
+               context.fill(bx + 3, by + y0, bx + 180 - 1, by + y0 + 22, btnBg);
             }
 
-            context.text(this.font, NAV_LABELS[i], bx + 14, by + y0 + 7, this.currentPage == i ? navSelectedText : this.TEXT_MUTED, false);
+            context.text(this.font, NAV_LABELS[i], bx + 14, by + y0 + 7, navSelected ? navSelectedText : this.TEXT_MUTED, false);
          }
 
          context.fill(bx + 180, by + TITLE_BAR_HEIGHT, bx + this.panelW, by + this.panelH, bgDark);
@@ -3831,10 +3842,21 @@ public class ModMenuIntegration {
       private void drawToggle(GuiGraphicsExtractor context, int bx, int by, int x, int y, int w, String label, boolean on, int mouseX, int mouseY) {
          boolean hover = mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + 22;
          if (hover) {
-            context.fill(bx + x, by + y, bx + x + w, by + y + 22, 1076899888);
+            context.fill(bx + x, by + y, bx + x + w, by + y + 22, this.palette.surface(80));
          }
 
-         context.text(this.font, (on ? "§a[ON] " : "§c[OFF] ") + "§r" + label, bx + x + 4, by + y + 4, this.TEXT_WHITE, false);
+         int trackX = x + 4;
+         int trackY = y + 7;
+         int trackW = 22;
+         int trackH = 10;
+         int track = on ? this.palette.accent() : this.palette.border(255);
+         context.fill(bx + trackX + 1, by + trackY, bx + trackX + trackW - 1, by + trackY + trackH, track);
+         context.fill(bx + trackX, by + trackY + 1, bx + trackX + trackW, by + trackY + trackH - 1, track);
+         int knobX = on ? trackX + trackW - 9 : trackX + 1;
+         int knob = on ? 0xFF000000 | this.palette.backgroundRgb() : this.palette.textMuted();
+         context.fill(bx + knobX + 1, by + trackY + 1, bx + knobX + 7, by + trackY + trackH - 1, knob);
+         context.fill(bx + knobX, by + trackY + 2, bx + knobX + 8, by + trackY + trackH - 2, knob);
+         context.text(this.font, label, bx + x + 34, by + y + 7, on ? this.TEXT_WHITE : this.TEXT_MUTED, false);
       }
 
       private void drawSegmentedModeRow(
@@ -4326,6 +4348,8 @@ public class ModMenuIntegration {
 
       private void drawHudPage(GuiGraphicsExtractor context, ScannerConfig config, int bx, int by, int cx, int cy, int cw, int lmx, int lmy, int btnBg, int btnHover) {
          int y = cy + 40;
+         this.drawHudPresetPicker(context, config, bx, by, cx, y, cw, lmx, lmy);
+         y += this.presetBlockHeight(HudPalette.values().length, cw);
          int anchorIdx = indexOf(HUD_ANCHORS, config.hudAnchor);
          if (anchorIdx < 0) {
             anchorIdx = 0;
@@ -4342,8 +4366,14 @@ public class ModMenuIntegration {
             int x = cx + col * (anchorW + anchorGap);
             int ty = y + row * 26;
             boolean hover = lmx >= x && lmx < x + anchorW && lmy >= ty && lmy < ty + 22;
+            boolean anchorSelected = anchorIdx == i;
             context.fill(bx + x, by + ty, bx + x + anchorW, by + ty + 22, hover ? btnHover : btnBg);
-            context.text(this.font, HUD_ANCHORS[i].replace("_", " "), bx + x + 6, by + ty + 6, anchorIdx == i ? -7820545 : this.TEXT_WHITE, false);
+            context.text(
+               this.font, HUD_ANCHORS[i].replace("_", " "), bx + x + 6, by + ty + 7, anchorSelected ? this.TEXT_WHITE : this.TEXT_MUTED, false
+            );
+            if (anchorSelected) {
+               this.drawOutline(context, bx + x, by + ty, anchorW, 22, this.palette.accent());
+            }
          }
 
          y += ((HUD_ANCHORS.length + anchorPer - 1) / anchorPer) * 26 + 12;
@@ -4363,8 +4393,12 @@ public class ModMenuIntegration {
             int x = cx + col * (themeW + themeGap);
             int ty = y + row * 26;
             boolean hover = lmx >= x && lmx < x + themeW && lmy >= ty && lmy < ty + 22;
+            boolean themeSelected = themeIdx == i;
             context.fill(bx + x, by + ty, bx + x + themeW, by + ty + 22, hover ? btnHover : btnBg);
-            context.text(this.font, HUD_THEMES[i], bx + x + 6, by + ty + 6, themeIdx == i ? -7820545 : this.TEXT_WHITE, false);
+            context.text(this.font, HUD_THEMES[i], bx + x + 6, by + ty + 7, themeSelected ? this.TEXT_WHITE : this.TEXT_MUTED, false);
+            if (themeSelected) {
+               this.drawOutline(context, bx + x, by + ty, themeW, 22, this.palette.accent());
+            }
          }
 
          y += ((HUD_THEMES.length + themePer - 1) / themePer) * 26 + 12;
@@ -4421,9 +4455,120 @@ public class ModMenuIntegration {
          return wrapPerRow(100, 10, cw);
       }
 
+      private int presetPerRow(int cw) {
+         return wrapPerRow(PRESET_CARD_W, PRESET_CARD_GAP, cw);
+      }
+
+      private int presetRowCount(int count, int cw) {
+         int perRow = this.presetPerRow(cw);
+         return (count + perRow - 1) / perRow;
+      }
+
+      /** Height of a preset picker block including its heading, so draw and hit-test stay aligned. */
+      private int presetBlockHeight(int count, int cw) {
+         return 14 + this.presetRowCount(count, cw) * (PRESET_CARD_H + PRESET_CARD_GAP) + 6;
+      }
+
+      private int presetCardX(int cx, int index, int cw) {
+         return cx + index % this.presetPerRow(cw) * (PRESET_CARD_W + PRESET_CARD_GAP);
+      }
+
+      private int presetCardY(int y, int index, int cw) {
+         return y + 14 + index / this.presetPerRow(cw) * (PRESET_CARD_H + PRESET_CARD_GAP);
+      }
+
+      private void drawOutline(GuiGraphicsExtractor context, int x, int y, int w, int h, int color) {
+         context.fill(x, y, x + w, y + 1, color);
+         context.fill(x, y + h - 1, x + w, y + h, color);
+         context.fill(x, y, x + 1, y + h, color);
+         context.fill(x + w - 1, y, x + w, y + h, color);
+      }
+
+      private void drawGuiPresetPicker(
+         GuiGraphicsExtractor context, ScannerConfig config, int bx, int by, int cx, int y, int cw, int lmx, int lmy
+      ) {
+         context.text(this.font, "Interface preset", bx + cx, by + y, this.TEXT_MUTED, false);
+         GuiPalette[] presets = GuiPalette.values();
+         GuiPalette active = GuiPalette.of(config);
+
+         for (int i = 0; i < presets.length; i++) {
+            GuiPalette preset = presets[i];
+            int x = this.presetCardX(cx, i, cw);
+            int cardY = this.presetCardY(y, i, cw);
+            boolean selected = preset == active;
+            boolean hover = lmx >= x && lmx < x + PRESET_CARD_W && lmy >= cardY && lmy < cardY + PRESET_CARD_H;
+            context.fill(bx + x, by + cardY, bx + x + PRESET_CARD_W, by + cardY + PRESET_CARD_H, 0xFF000000 | preset.backgroundRgb());
+            int sx = x + 9;
+            int sy = cardY + 8;
+            context.fill(bx + sx, by + sy, bx + sx + 9, by + sy + 28, 0xFF000000 | preset.sidebarRgb());
+            context.fill(bx + sx + 9, by + sy, bx + sx + 24, by + sy + 28, 0xFF000000 | preset.surfaceRgb());
+            context.fill(bx + sx + 9, by + sy, bx + sx + 24, by + sy + 4, preset.accent());
+            context.text(this.font, preset.label(), bx + x + 42, by + cardY + 10, selected ? preset.accent() : preset.textPrimary(), false);
+            context.text(this.font, preset.blurb(), bx + x + 42, by + cardY + 24, preset.textMuted(), false);
+            if (selected) {
+               this.drawOutline(context, bx + x, by + cardY, PRESET_CARD_W, PRESET_CARD_H, preset.accent());
+               context.fill(bx + x, by + cardY + 12, bx + x + 2, by + cardY + PRESET_CARD_H - 12, preset.accent());
+            } else if (hover) {
+               this.drawOutline(context, bx + x, by + cardY, PRESET_CARD_W, PRESET_CARD_H, preset.border(255));
+            }
+         }
+      }
+
+      private void drawHudPresetPicker(
+         GuiGraphicsExtractor context, ScannerConfig config, int bx, int by, int cx, int y, int cw, int lmx, int lmy
+      ) {
+         context.text(this.font, "HUD preset", bx + cx, by + y, this.TEXT_MUTED, false);
+         HudPalette[] presets = HudPalette.values();
+         HudPalette active = HudPalette.of(config);
+         boolean usingPreset = config != null && "PRESET".equalsIgnoreCase(config.hudBorderTheme);
+
+         for (int i = 0; i < presets.length; i++) {
+            HudPalette preset = presets[i];
+            int x = this.presetCardX(cx, i, cw);
+            int cardY = this.presetCardY(y, i, cw);
+            boolean selected = usingPreset && preset == active;
+            boolean hover = lmx >= x && lmx < x + PRESET_CARD_W && lmy >= cardY && lmy < cardY + PRESET_CARD_H;
+            context.fill(bx + x, by + cardY, bx + x + PRESET_CARD_W, by + cardY + PRESET_CARD_H, selected || hover ? 0x33FFFFFF : 0x1AFFFFFF);
+            int sx = x + 9;
+            int sy = cardY + 8;
+            context.fill(bx + sx, by + sy, bx + sx + 24, by + sy + 28, preset.card());
+            int[] strip = preset.strip();
+            int segW = Math.max(1, 24 / strip.length);
+
+            for (int s = 0; s < strip.length; s++) {
+               int segX = sx + s * segW;
+               int width = s == strip.length - 1 ? sx + 24 - segX : segW;
+               if (width > 0) {
+                  context.fill(bx + segX, by + sy, bx + segX + width, by + sy + 3, strip[s]);
+               }
+            }
+
+            this.drawOutline(context, bx + sx, by + sy, 24, 28, preset.edge());
+            context.text(this.font, preset.label(), bx + x + 42, by + cardY + 10, selected ? preset.accent() : this.TEXT_WHITE, false);
+            context.text(this.font, preset.blurb(), bx + x + 42, by + cardY + 24, this.TEXT_MUTED, false);
+            if (selected) {
+               this.drawOutline(context, bx + x, by + cardY, PRESET_CARD_W, PRESET_CARD_H, preset.accent());
+               context.fill(bx + x, by + cardY + 12, bx + x + 2, by + cardY + PRESET_CARD_H - 12, preset.accent());
+            }
+         }
+      }
+
+      /** Returns the index of the preset card under the cursor, or -1. */
+      private int presetCardAt(int cx, int y, int cw, int count, int lx, int ly) {
+         for (int i = 0; i < count; i++) {
+            int x = this.presetCardX(cx, i, cw);
+            int cardY = this.presetCardY(y, i, cw);
+            if (lx >= x && lx < x + PRESET_CARD_W && ly >= cardY && ly < cardY + PRESET_CARD_H) {
+               return i;
+            }
+         }
+
+         return -1;
+      }
+
       private int getAppearanceHighlightStartY(int cy, int cw) {
          int y = cy + 40;
-         y += 28;
+         y += this.presetBlockHeight(GuiPalette.values().length, cw);
          y += 28;
          y += 16;
          int themeRows = (GUI_ACCENT_THEME_KEYS.length + this.appearanceThemePerRow(cw) - 1) / this.appearanceThemePerRow(cw);
@@ -4747,8 +4892,8 @@ public class ModMenuIntegration {
          GuiGraphicsExtractor context, ScannerConfig config, int bx, int by, int cx, int cy, int cw, int lmx, int lmy, int btnBg, int btnHover
       ) {
          int y = cy + 40;
-         this.drawToggle(context, bx, by, cx, y, cw, "Dark mode", config.guiDarkMode, lmx, lmy);
-         y += 28;
+         this.drawGuiPresetPicker(context, config, bx, by, cx, y, cw, lmx, lmy);
+         y += this.presetBlockHeight(GuiPalette.values().length, cw);
          int opacityX = this.getAppearanceOpacityInputX(cx);
          int alpha = this.getGuiAlpha(config);
          context.text(this.font, "GUI opacity (0-255):", bx + cx, by + y + 4, this.TEXT_WHITE, false);
@@ -4765,7 +4910,7 @@ public class ModMenuIntegration {
          }
 
          y += 28;
-         context.text(this.font, "GUI color theme", bx + cx, by + y, this.TEXT_MUTED, false);
+         context.text(this.font, "Accent override", bx + cx, by + y, this.TEXT_MUTED, false);
          y += 16;
          int themeButtonW = 100;
          int themeGap = 10;
@@ -4779,10 +4924,13 @@ public class ModMenuIntegration {
             int ty = y + row * 28;
             boolean hover = lmx >= x && lmx < x + themeButtonW && lmy >= ty && lmy < ty + 24;
             boolean selected = GUI_ACCENT_THEME_KEYS[i].equals(selectedTheme);
-            int border = selected ? 0xFF000000 | this.resolveGuiAccentRgb(config) : (hover ? btnHover : btnBg);
-            context.fill(bx + x, by + ty, bx + x + themeButtonW, by + ty + 24, border);
-            context.fill(bx + x + 1, by + ty + 1, bx + x + themeButtonW - 1, by + ty + 24 - 1, 0xFF000000 | GUI_ACCENT_THEME_COLORS[i]);
-            context.text(this.font, GUI_ACCENT_THEME_LABELS[i], bx + x + 6, by + ty + 6, this.TEXT_WHITE, false);
+            int swatchRgb = "PRESET".equals(GUI_ACCENT_THEME_KEYS[i]) ? this.palette.accentRgb() : GUI_ACCENT_THEME_COLORS[i];
+            context.fill(bx + x, by + ty, bx + x + themeButtonW, by + ty + 24, hover ? btnHover : btnBg);
+            context.fill(bx + x + 6, by + ty + 8, bx + x + 14, by + ty + 16, 0xFF000000 | swatchRgb);
+            context.text(this.font, GUI_ACCENT_THEME_LABELS[i], bx + x + 20, by + ty + 8, selected ? this.TEXT_WHITE : this.TEXT_MUTED, false);
+            if (selected) {
+               this.drawOutline(context, bx + x, by + ty, themeButtonW, 24, 0xFF000000 | this.resolveGuiAccentRgb(config));
+            }
          }
 
          int themeRows = (GUI_ACCENT_THEME_KEYS.length + themePerRow - 1) / themePerRow;
